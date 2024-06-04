@@ -8,7 +8,7 @@ export const config: PlasmoCSConfig = {
 }
 
 export const getInlineAnchor: PlasmoGetInlineAnchor = () =>
-    document.querySelector("div#iteminfo1_item_market_actions > a");
+    document.querySelector("div#iteminfo0_item_market_actions > a");
 
 export const getStyle = () => {
     const style = document.createElement("style");
@@ -16,31 +16,39 @@ export const getStyle = () => {
     return style;
 }
 
-const Button = () => {
+const Button0 = () => {
     const storage = new Storage();
 
     const handleClick = async () => {
-        const item = document.querySelector("div#iteminfo1");
+        const item = document.querySelector("div#iteminfo0");
 
         let marketItem = {
             name: '',
             image: '',
             id: '',
-            price: 0,
+            marketPrice: 0,
+            currentPrice: 0,
+            afterFeesPrice: 0,
         }
 
         marketItem.name = item.querySelector("h1.hover_item_name").textContent;
-        marketItem.image = item.querySelector("img#iteminfo1_item_icon").getAttribute('src');
+        marketItem.image = item.querySelector("img#iteminfo0_item_icon").getAttribute('src');
         marketItem.id = document.querySelector("div.item.activeInfo").getAttribute('id');
 
         let rawPriceString = item.querySelector("div.item_market_actions > div > div:nth-child(2)").textContent;
-        rawPriceString = rawPriceString.split('Starting at: ')[1];
-        rawPriceString = rawPriceString.split('Volume')[0];
-        rawPriceString = rawPriceString.replace(/\D/g, '');
-        let rawPrice = parseFloat(rawPriceString);
-        rawPrice = rawPrice / 100;
+        let rawPrice = 0.03;
+        try {
+            rawPriceString = rawPriceString.split('Starting at: ')[1];
+            rawPriceString = rawPriceString.split('Volume')[0];
+            rawPriceString = rawPriceString.replace(/\D/g, '');
+            let rawPrice = parseFloat(rawPriceString);
+            rawPrice = rawPrice / 100;
+        } catch {
+            rawPrice = 0.03;
+        }
 
-        marketItem.price = rawPrice;
+        marketItem.marketPrice = rawPrice;
+        marketItem.currentPrice = rawPrice;
 
         console.log(marketItem);
         await storage.set('newItem', marketItem);
@@ -51,4 +59,4 @@ const Button = () => {
     )
 }
 
-export default Button
+export default Button0
