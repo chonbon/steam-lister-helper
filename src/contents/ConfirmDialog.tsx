@@ -1,6 +1,6 @@
 import type { PlasmoCSConfig, PlasmoGetOverlayAnchor } from "plasmo"
 import cssText from "data-text:~./contents/ConfirmDialog.css"
-import { Storage } from "@plasmohq/storage"
+import { useStorage } from "@plasmohq/storage/hook"
 import { useEffect, useState } from "react";
 
 export const config: PlasmoCSConfig = {
@@ -22,25 +22,27 @@ export const getStyle = () => {
 
 const ConfirmDialog = () => {
     const [items, setItems] = useState([]);
+    const [readyForSale, setReadyForSale] = useStorage('readyForSale');
+    const [startSale, setStartSale] = useStorage('startSale');
 
-    const storage = new Storage();
-
-    storage.watch({
-        "readyForSale": (c) => {
-            if (c.newValue) {
-                setItems([...c.newValue]);
-            }
+    // listen for conirmation dialog to be opened
+    useEffect(() => {
+        if (readyForSale) {
+            setItems(readyForSale);
         }
-    })
+        setReadyForSale(null);
+    }, [readyForSale]);
 
+    // cancel and dismiss the dialog
     const cancel = () => {
         setItems([]);
-        storage.remove("readyForSale");
+        setReadyForSale(null);
     }
 
+    // dismiss the dialog and trigger the sale/listing
     const confirmSale = () => {
-        storage.remove("readyForSale");
-        storage.setItem('startSale', {value: true});
+        setReadyForSale(null);
+        setStartSale(true);
         setItems([]);
     }
 
@@ -51,7 +53,7 @@ const ConfirmDialog = () => {
                     <a onClick={() => {cancel()}} style={{cursor:items.length > 0 ?'pointer':'not-allowed'}} className="bg-[url(https://community.akamai.steamstatic.com/public/images/economy/btn_green_small.png)] bg-repeat-x bg-left-bottom text-white h-[24px] pl-2 pr-2 rounded-sm cursor-pointer hover:brightness-75">Cancel</a>
                     <a onClick={() => {confirmSale()}} style={{cursor:items.length > 0 ?'pointer':'not-allowed'}} className="bg-[url(https://community.akamai.steamstatic.com/public/images/economy/btn_green_small.png)] bg-repeat-x bg-left-bottom text-white h-[24px] pl-2 pr-2 rounded-sm cursor-pointer hover:brightness-75">Confirm</a>
                 </div>
-                <div className="flex flex-col gap-2 bg-gray-800 pt-4 pb-4 pl-12 pr-12 rounded-b max-h-[70%] max-w-72 overflow-y-auto overflow-x-hidden">
+                <div className="flex flex-col gap-2 bg-gray-800 pt-4 pb-4 pl-12 pr-12 max-h-[70%] max-w-72 overflow-y-auto overflow-x-hidden">
                     {
                         items.map((item, index) => (
                             <div key={index} className="border-white border-[1px] relative min-w-48 max-w-48 max-h-48 min-h-48 rounded">
@@ -67,7 +69,7 @@ const ConfirmDialog = () => {
                         ))
                     }
                 </div>
-                <div className="flex w-72 justify-between bg-gray-800 p-4 rounded-t">
+                <div className="flex w-72 justify-between bg-gray-800 p-4 rounded-b">
                     <p className="text-zinc-400">Recieve: ${(items.reduce((total,current) => total + current.afterFeesPrice,0)).toFixed(2)}</p>
                     <p className="text-zinc-400">List: ${(items.reduce((total,current) => total + current.currentPrice,0)).toFixed(2)}</p>
                 </div>

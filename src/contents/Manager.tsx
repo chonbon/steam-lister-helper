@@ -1,16 +1,8 @@
-import type { PlasmoCSConfig, PlasmoGetInlineAnchor, PlasmoGetRootContainer } from "plasmo"
+import type { PlasmoCSConfig, PlasmoGetInlineAnchor } from "plasmo"
 import cssText from "data-text:~./popup/index.css"
-import { Storage } from "@plasmohq/storage"
+import { useStorage } from "@plasmohq/storage/hook"
 import { useEffect, useState } from "react";
 import { FaRegTrashCan, FaArrowsRotate, FaCheck, FaExclamation } from "react-icons/fa6";
-
-
-// https://steamcommunity.com/market/sellitem/ POST
-// FORM_DATA sessionid=1048812b715eea8140f222a8   &appid=431240   &contextid=2   &assetid=4818362741907987812   &amount=1   &price=1
-//
-//
-//
-//
 
 export const config: PlasmoCSConfig = {
     matches: ["https://steamcommunity.com/id/*/inventory*"],
@@ -30,7 +22,10 @@ const Page = () => {
   const [items, setItems] = useState([]);
   const [isListing, setIsListing] = useState(false);
   const [sessionid, setSessionid] = useState('');
-  const storage = new Storage();
+  const [newItem, setNewItem] = useStorage('newItem');
+  const [removedItem, setRemovedItem] = useStorage('removedItem');
+  const [readyForSale, setReadyForSale] = useStorage('readyForSale');
+  const [startSale, setStartSale] = useStorage('startSale');
 
   const totalPrices = items.reduce((total, item) => total + item.afterFeesPrice, 0);
 
@@ -42,43 +37,38 @@ const Page = () => {
       cookies = cookies.split(";")[0];
 
       setSessionid(cookies);
+      console.log('Steam Session ID: ', cookies)
     } catch (err) {
       console.error('Failed to grab session id');
     }
   },[]);
 
+  // monitor new items
   useEffect(() => {
-    storage.setItem('items', items);
-
-    console.log(items)
-  },[items])
-
-  // listen to newItem storage
-  storage.watch({
-    "newItem": (c) => {
-      if (c.newValue) {
-        if (items.filter((i) => i.id === c.newValue.id).length === 0) {
-          const tempItem = c.newValue;
+    if (newItem) {
+      if (items.filter((i) => i.id === newItem.id).length === 0) {
+          const tempItem = newItem;
           tempItem.afterFeesPrice = calculatePriceAfterFees(tempItem.currentPrice);
           tempItem.isListing = false;
           tempItem.isListed = false;
           tempItem.listingError = false;
           setItems([...items, tempItem]);
-        }
-        storage.remove("newItem");
       }
-    },
-    "startSale": (c) => {
-      if (c.newValue) {
+      setNewItem(null);
+    }
+  },[newItem]);
+
+  // monitor confirmation dialog
+  useEffect(() => {
+    if (startSale && !isListing) {
         setIsListing(true);
         let tempItems = [...items];
         tempItems = tempItems.map((item) => {item.isListing = true; return item;})
-        setItems([...tempItems]);
+        setItems(tempItems);
         listItems();
-        storage.remove("startSale");
-      }
     }
-  });
+    setStartSale(false);
+  }, [startSale])
 
   // calculate the price after fees for what the take home and listing price will be
   const calculatePriceAfterFees = (price: number) => {
@@ -97,15 +87,16 @@ const Page = () => {
   const removeItem = (index: number) => {
     if (isListing) return;
     const newItems = [...items];
-    storage.setItem('removedItem', newItems[index]);
+    setRemovedItem(newItems[index]);
     newItems.splice(index, 1);
-    setItems([...newItems]);
+    setItems(newItems);
   }
 
+  // removes all items from the list
   const clear = async () => {
     if (isListing) return;
     for (const item of items) {
-      storage.setItem('removedItem', item);
+      setRemovedItem(item);
     }
     setItems([]);
   }
@@ -119,20 +110,23 @@ const Page = () => {
     const newItems = [...items];
     newItems[index].currentPrice = roundedPrice;
     newItems[index].afterFeesPrice = calculatePriceAfterFees(roundedPrice);
-    setItems([...newItems]);
+    setItems(newItems);
   }
 
   // open the dialog to confirm the sale
-  const startSale = () => {
+  const openDialog = () => {
     if (items.length === 0) return;
     if (isListing) return;
 
-    storage.setItem('readyForSale', items);
+    setReadyForSale(items);
   }
 
+  // iterate list and send post request
   const listItems = async () => {
     const localItems = [...items];
     for (const item of localItems) {
+      console.log('Listing Item: ', item.name);
+
       const formData = new FormData();
       formData.append("sessionid", sessionid)
       formData.append("appid", item.id.split('_')[0]);
@@ -141,32 +135,41 @@ const Page = () => {
       formData.append("amount", "1");
       formData.append("price", (item.afterFeesPrice * 100).toFixed(0));
 
+      console.log('Listing Data: ', formData);
+
       await fetch("https://steamcommunity.com/market/sellitem/", {
         method: "POST",
         body: formData
       }).then(async (res) => {
         const result = await res.json();
 
+        console.log('Listing Result: ', result)
+
         if (result.success) {
           item.isListed = true;
         } else {
           item.listingError = true;
         }
+
+        return;
         
       }).catch((err) => {
         item.listingError = true;
+
+        console.error('LISTING ERROR '+ err);
+
+        return;
       });
 
       item.isListing = false;
-
       setItems([...localItems]);
       await sleep(750);
-
     }
 
     setIsListing(false);
   }
   
+  // sleep function
   const sleep = async (ms: number) => {
     return new Promise(resolve => setTimeout(resolve, ms));
   }
@@ -177,12 +180,12 @@ const Page = () => {
         <h1 className="text-white">Total: ${totalPrices.toFixed(2)} | {items.length} selected</h1>
         <div className="flex gap-2">
           <a onClick={() => {clear()}} style={{cursor:items.length > 0 ?'pointer':'not-allowed'}} className="bg-[url(https://community.akamai.steamstatic.com/public/images/economy/btn_green_small.png)] bg-repeat-x bg-left-bottom text-white h-[24px] pl-2 pr-2 rounded-sm cursor-pointer hover:brightness-75">Clear</a>
-          <a onClick={() => {startSale()}} style={{cursor:items.length > 0 ?'pointer':'not-allowed'}} className="bg-[url(https://community.akamai.steamstatic.com/public/images/economy/btn_green_small.png)] bg-repeat-x bg-left-bottom text-white h-[24px] pl-2 pr-2 rounded-sm cursor-pointer hover:brightness-75">Sell All</a>
+          <a onClick={() => {openDialog()}} style={{cursor:items.length > 0 ?'pointer':'not-allowed'}} className="bg-[url(https://community.akamai.steamstatic.com/public/images/economy/btn_green_small.png)] bg-repeat-x bg-left-bottom text-white h-[24px] pl-2 pr-2 rounded-sm cursor-pointer hover:brightness-75">Sell All</a>
         </div>
       </div>
       <div className="flex p-2 max-h-56 w-full gap-2 overflow-x-auto overflow-y-hidden">
         {items.map((item, index) => (
-          <div key={index} className="border-white border-[1px] relative min-w-48 max-w-48 max-h-48 min-h-48 rounded">
+          <div key={item.id} className="border-white border-[1px] relative min-w-48 max-w-48 max-h-48 min-h-48 rounded">
             <FaRegTrashCan className="absolute right-0 top-0 text-white font-bold bg-black/50 rounded w-10 h-10 p-2 hover:text-red-600 cursor-pointer" onClick={() => {removeItem(index)}} />
             {item.isListing ? 
               <div className="absolute left-0 top-0 bg-black/50 rounded"><FaArrowsRotate className=" text-white font-bold w-10 h-10 p-2 animate-spin" /></div>

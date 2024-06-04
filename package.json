@@ -1,7 +1,7 @@
 {
-  "name": "steam-lister-helper",
-  "displayName": "Steam lister helper",
-  "version": "0.1.3",
+  "name": "chon-inventory-helper",
+  "displayName": "Chons Inventory Helper",
+  "version": "0.2.1",
   "description": "An extension that helps you list multiple items on steam, fast.",
   "author": "chon",
   "scripts": {
@@ -34,6 +34,11 @@
     ],
     "permissions": [
       "cookies"
-    ]
+    ],
+    "browser_specific_settings": {
+      "gecko": {
+        "id": "chons-inventory-helper@austinchoncek.com"
+      }
+    }
   }
 }

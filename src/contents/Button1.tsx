@@ -1,6 +1,6 @@
 import type { PlasmoCSConfig, PlasmoGetInlineAnchor } from "plasmo"
 import cssText from "data-text:~./popup/index.css"
-import { Storage } from "@plasmohq/storage"
+import { useStorage } from "@plasmohq/storage/hook"
 
 export const config: PlasmoCSConfig = {
     matches: ["https://steamcommunity.com/id/*/inventory*"],
@@ -17,7 +17,7 @@ export const getStyle = () => {
 }
 
 const Button1 = () => {
-    const storage = new Storage();
+    const [newItem, setNewItem] = useStorage('newItem');
 
     const handleClick = async () => {
         const item = document.querySelector("div#iteminfo1");
@@ -50,7 +50,7 @@ const Button1 = () => {
         marketItem.marketPrice = rawPrice;
         marketItem.currentPrice = rawPrice;
 
-        await storage.set('newItem', marketItem);
+        setNewItem(marketItem);
     }
 
     return (
