@@ -50,7 +50,6 @@ const Button0 = () => {
         marketItem.marketPrice = rawPrice;
         marketItem.currentPrice = rawPrice;
 
-        console.log(marketItem);
         await storage.set('newItem', marketItem);
     }
 
