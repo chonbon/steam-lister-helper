@@ -1,7 +1,7 @@
 {
   "name": "steam-lister-helper",
   "displayName": "Steam lister helper",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "An extension that helps you list multiple items on steam, fast.",
   "author": "chon",
   "scripts": {
