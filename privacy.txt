@@ -1,0 +1,1 @@
+The extension does not collect any user information or transmit any information other than to steams marketplace api.
