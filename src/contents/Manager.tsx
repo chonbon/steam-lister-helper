@@ -139,7 +139,12 @@ const Page = () => {
 
       await fetch("https://steamcommunity.com/market/sellitem/", {
         method: "POST",
-        body: formData
+        body: formData,
+        cache: 'no-cache',
+        mode: 'cors',
+        credentials: 'include',
+        referrer: window.location.href,
+        referrerPolicy: 'no-referrer-when-downgrade'
       }).then(async (res) => {
         const result = await res.json();
 
