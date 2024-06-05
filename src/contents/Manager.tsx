@@ -2,7 +2,7 @@ import type { PlasmoCSConfig, PlasmoGetInlineAnchor } from "plasmo"
 import cssText from "data-text:~./popup/index.css"
 import { useStorage } from "@plasmohq/storage/hook"
 import { useEffect, useState } from "react";
-import { FaRegTrashCan, FaArrowsRotate, FaCheck, FaExclamation } from "react-icons/fa6";
+import { FaRegTrashCan, FaArrowsRotate, FaCheck, FaExclamation, FaShieldVirus } from "react-icons/fa6";
 
 export const config: PlasmoCSConfig = {
     matches: ["https://steamcommunity.com/id/*/inventory*"],
@@ -151,6 +151,9 @@ const Page = () => {
         console.log('Listing Result: ', result)
 
         if (result.success) {
+          if (result.requires_confirmation === 1) {
+            item.listingError = true;
+          }
           item.isListed = true;
         } else {
           item.listingError = true;
@@ -194,11 +197,13 @@ const Page = () => {
             <FaRegTrashCan className="absolute right-0 top-0 text-white font-bold bg-black/50 rounded w-10 h-10 p-2 hover:text-red-600 cursor-pointer" onClick={() => {removeItem(index)}} />
             {item.isListing ? 
               <div className="absolute left-0 top-0 bg-black/50 rounded"><FaArrowsRotate className=" text-white font-bold w-10 h-10 p-2 animate-spin" /></div>
-              : item.isListed ?
+              : item.isListed && !item.listingError ?
               <FaCheck className="absolute left-0 top-0 text-green-600 font-bold bg-black/50 rounded w-10 h-10 p-2" />
-              : item.listingError ?
+              : item.listingError && item.isListed ?
+              <FaShieldVirus className="absolute left-0 top-0 text-yellow-600 font-bold bg-black/50 rounded w-10 h-10 p-2" />
+              :
               <FaExclamation className="absolute left-0 top-0 text-red-600 font-bold bg-black/50 rounded w-10 h-10 p-2" />
-              : <></>
+              
             }
             <img src={item.image} alt={item.name} className="" />
             <div className="absolute flex-col flex bottom-0 w-full bg-black/50 rounded text-white gap-2 p-2">
