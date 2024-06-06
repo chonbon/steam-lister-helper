@@ -201,8 +201,9 @@ const Page = () => {
               <FaCheck className="absolute left-0 top-0 text-green-600 font-bold bg-black/50 rounded w-10 h-10 p-2" />
               : item.listingError && item.isListed ?
               <FaShieldVirus className="absolute left-0 top-0 text-yellow-600 font-bold bg-black/50 rounded w-10 h-10 p-2" />
-              :
+              : item.listingError ?
               <FaExclamation className="absolute left-0 top-0 text-red-600 font-bold bg-black/50 rounded w-10 h-10 p-2" />
+              : <></>
               
             }
             <img src={item.image} alt={item.name} className="" />

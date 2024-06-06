@@ -32,9 +32,7 @@
     "host_permissions": [
       "https://steamcommunity.com/*"
     ],
-    "permissions": [
-      "cookies"
-    ],
+    "permissions": [],
     "browser_specific_settings": {
       "gecko": {
         "id": "chons-inventory-helper@austinchoncek.com"
